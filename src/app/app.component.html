@@ -1,21 +1,56 @@
 <main class="container">
-  <h1>Welcome to Tauri + Angular!</h1>
+  <header>
+    <p class="eyebrow">Drift</p>
+    <h1>File sorting preview</h1>
+    <p>Select a folder to see where its files would be sorted. Nothing will be moved or changed.</p>
+  </header>
 
-  <div class="row">
-    <a href="https://tauri.app" target="_blank">
-      <img src="/assets/tauri.svg" class="logo tauri" alt="Tauri logo" />
-    </a>
-    <a href="https://angular.io" target="_blank">
-      <img src="/assets/angular.svg" class="logo angular" alt="Angular logo" />
-    </a>
-  </div>
-  <p>Click on the logos to learn more about the frameworks</p>
+  <section class="controls" aria-label="Directory selection">
+    <button type="button" (click)="selectDirectory()" [disabled]="isLoading">
+      {{ isLoading ? "Scanning…" : "Select directory" }}
+    </button>
+    @if (selectedDirectory) {
+      <span class="selected-path" [title]="selectedDirectory">{{ selectedDirectory }}</span>
+    }
+  </section>
 
-  <form class="row" (submit)="greet($event, greetInput.value)">
-    <input #greetInput id="greet-input" placeholder="Enter a name..." />
-    <button type="submit">Greet</button>
-  </form>
-  <p>{{ greetingMessage }}</p>
+  <section class="aggressiveness" aria-labelledby="aggressiveness-title">
+    <div class="slider-heading">
+      <div>
+        <label id="aggressiveness-title" for="aggressiveness">How clean should the main folder stay?</label>
+        <p>{{ aggressivenessLabel }}</p>
+      </div>
+      <strong>{{ aggressiveness }}/3</strong>
+    </div>
+    <input id="aggressiveness" type="range" min="1" max="3" step="1"
+      [value]="aggressiveness" (change)="changeAggressiveness($event)" [disabled]="isLoading" />
+    <div class="scale" aria-hidden="true"><span>Personal files only</span><span>Known file types</span><span>Everything</span></div>
+  </section>
 
-  <router-outlet />
+  @if (errorMessage) { <p class="error" role="alert">{{ errorMessage }}</p> }
+  @if (!isLoading && selectedDirectory && files.length === 0 && !errorMessage) {
+    <p class="empty">No regular files were found in this directory.</p>
+  }
+  @if (files.length > 0) {
+    <p class="summary">{{ files.length }} file{{ files.length === 1 ? "" : "s" }} found</p>
+    <div class="table-wrapper">
+      <table>
+        <thead><tr><th>Name</th><th>Extension</th><th>Size</th><th>Modified</th><th>Category</th><th>Proposed destination</th></tr></thead>
+        <tbody>
+          @for (file of files; track file.path) {
+            <tr>
+              <td class="name" [title]="file.path">{{ file.name }}</td>
+              <td>{{ file.extension || "—" }}</td>
+              <td>{{ file.size / 1024 | number: "1.0-1" }} KB</td>
+              <td>{{ file.modifiedTime | date: "medium" }}</td>
+              <td><span class="category">{{ file.category }}</span></td>
+              <td class="destination" [class.keep]="!file.willMove" [title]="file.proposedDestination">
+                {{ file.willMove ? file.proposedDestination : "Keep in current folder" }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
 </main>
